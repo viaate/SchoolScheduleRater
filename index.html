@@ -1,0 +1,271 @@
+<html><head><base href="https://websim.example.com/terminal-schedule-rater/">
+<title>Terminal School Schedule Rater</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background-color: #000;
+        color: #00ff00;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.2;
+        overflow: hidden;
+    }
+    #terminal {
+        height: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+    #input-line {
+        display: flex;
+        margin-top: 10px;
+    }
+    #prompt {
+        color: #00ff00;
+        margin-right: 5px;
+    }
+    #user-input {
+        flex-grow: 1;
+        background: transparent;
+        border: none;
+        color: #00ff00;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        outline: none;
+    }
+    .output-line {
+        white-space: pre-wrap;
+        margin-bottom: 5px;
+    }
+    @keyframes blink {
+        0% { opacity: 0; }
+        49% { opacity: 0; }
+        50% { opacity: 1; }
+        100% { opacity: 1; }
+    }
+    #cursor {
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background-color: #00ff00;
+        animation: blink 1s infinite;
+    }
+</style>
+</head>
+<body>
+<div id="terminal">
+    <div id="output"></div>
+    <div id="input-line">
+        <span id="prompt">&gt;</span>
+        <input type="text" id="user-input" autofocus>
+        <span id="cursor"></span>
+    </div>
+</div>
+
+<script>
+    const weekSchedule = {
+        Monday: ['Morning Meeting', 'Red', 'Orange', 'Yellow', 'Lunch', 'Green', 'Light Blue', 'Royal Blue', 'Purple'],
+        Tuesday: ['Advisory', 'Yellow', 'Orange', 'Lunch', 'Red', 'Encore'],
+        Wednesday: ['Advisory', 'Light Blue', 'Green', 'Lunch', 'Purple', 'Royal Blue'],
+        Thursday: ['Late Start', 'Red', 'Lunch', 'Orange', 'Yellow'],
+        Friday: ['Advisory', 'Royal Blue', 'Purple', 'Lunch', 'Green', 'Light Blue']
+    };
+
+    const goodTransitions = {
+        Monday: [
+            ['Science', 'Math'], ['Math', 'English'], ['English', 'History'],
+            ['History', 'Language'], ['Language', 'PE'], ['PE', 'Art'],
+            ['Art', 'Science']
+        ],
+        Tuesday: [
+            ['Math', 'Science'], ['Science', 'English'], ['English', 'History'],
+            ['History', 'Language'], ['Language', 'PE'], ['PE', 'Art'],
+            ['Art', 'Math']
+        ],
+        Wednesday: [
+            ['English', 'History'], ['History', 'Language'], ['Language', 'PE'],
+            ['PE', 'Art'], ['Art', 'Science'], ['Science', 'Math'],
+            ['Math', 'English']
+        ],
+        Thursday: [
+            ['Language', 'Math'], ['Math', 'Science'], ['Science', 'English'],
+            ['English', 'History'], ['History', 'PE'], ['PE', 'Art'],
+            ['Art', 'Language']
+        ],
+        Friday: [
+            ['Science', 'PE'], ['PE', 'History'], ['History', 'Math'],
+            ['Math', 'English'], ['English', 'Language'], ['Language', 'Art'],
+            ['Art', 'Science']
+        ]
+    };
+
+    const badTransitions = {
+        Monday: [
+            ['Math', 'PE'], ['PE', 'English'], ['English', 'Science'],
+            ['Science', 'History'], ['History', 'Art'], ['Art', 'Language'],
+            ['Language', 'Math']
+        ],
+        Tuesday: [
+            ['English', 'Math'], ['Math', 'History'], ['History', 'Science'],
+            ['Science', 'PE'], ['PE', 'Language'], ['Language', 'Art'],
+            ['Art', 'English']
+        ],
+        Wednesday: [
+            ['History', 'Science'], ['Science', 'PE'], ['PE', 'Math'],
+            ['Math', 'Art'], ['Art', 'English'], ['English', 'Language'],
+            ['Language', 'History']
+        ],
+        Thursday: [
+            ['Science', 'English'], ['English', 'PE'], ['PE', 'History'],
+            ['History', 'Art'], ['Art', 'Math'], ['Math', 'Language'],
+            ['Language', 'Science']
+        ],
+        Friday: [
+            ['PE', 'Language'], ['Language', 'Math'], ['Math', 'Art'],
+            ['Art', 'English'], ['English', 'Science'], ['Science', 'History'],
+            ['History', 'PE']
+        ]
+    };
+
+    const classOptions = ['Science', 'Math', 'English', 'History', 'Language', 'PE', 'Art'];
+    const colors = ['Red', 'Orange', 'Yellow', 'Green', 'Light Blue', 'Royal Blue', 'Purple'];
+    let currentColorIndex = 0;
+    let classes = {};
+
+    const terminal = document.getElementById('terminal');
+    const output = document.getElementById('output');
+    const userInput = document.getElementById('user-input');
+
+    function printLine(text) {
+        const line = document.createElement('div');
+        line.className = 'output-line';
+        line.textContent = text;
+        output.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearTerminal() {
+        output.innerHTML = '';
+    }
+
+    function askForClass() {
+        clearTerminal();
+        if (currentColorIndex < colors.length) {
+            printLine(`What is your ${colors[currentColorIndex]} color class?`);
+            classOptions.forEach((option, index) => {
+                printLine(`${index + 1}. ${option}`);
+            });
+            printLine("Enter the number of your choice:");
+        } else {
+            printLine("All classes have been set. Type 'rate' to rate your schedule or 'show' to see your assignments.");
+        }
+    }
+
+    function processInput(input) {
+        if (currentColorIndex < colors.length) {
+            const choice = parseInt(input);
+            if (choice >= 1 && choice <= classOptions.length) {
+                const selectedClass = classOptions[choice - 1];
+                classes[colors[currentColorIndex]] = selectedClass;
+                printLine(`Set ${colors[currentColorIndex]} to ${selectedClass}`);
+                currentColorIndex++;
+                setTimeout(() => {
+                    if (currentColorIndex < colors.length) {
+                        askForClass();
+                    } else {
+                        clearTerminal();
+                        printLine("All classes have been set. Type 'rate' to rate your schedule or 'show' to see your assignments.");
+                    }
+                }, 1000);
+            } else {
+                printLine("Invalid choice. Please enter a number between 1 and 7.");
+                setTimeout(askForClass, 1000);
+            }
+        } else {
+            processCommand(input);
+        }
+    }
+
+    function processCommand(command) {
+        clearTerminal();
+        switch (command.toLowerCase()) {
+            case 'show':
+                printLine('Current class assignments:');
+                for (const [color, className] of Object.entries(classes)) {
+                    printLine(`  ${color}: ${className || '(not set)'}`);
+                }
+                break;
+            case 'rate':
+                rateSchedule();
+                break;
+            case 'exit':
+                printLine('Goodbye!');
+                userInput.disabled = true;
+                break;
+            default:
+                printLine(`Unknown command: ${command}`);
+                printLine('Available commands: show, rate, exit');
+        }
+    }
+
+    function rateSchedule() {
+        let totalRating = 0;
+        let goodTransitionsCount = 0;
+        let badTransitionsCount = 0;
+
+        for (let day in weekSchedule) {
+            const dayClasses = weekSchedule[day].map(color => classes[color] || color)
+                .filter(c => !['Morning Meeting', 'Advisory', 'Lunch', 'Encore', 'Late Start'].includes(c));
+            const { adjustment, good, bad } = rateClassOrder(dayClasses, day);
+            totalRating += adjustment;
+            goodTransitionsCount += good;
+            badTransitionsCount += bad;
+        }
+
+        const averageRating = Math.max(1, Math.min(10, 5 + (totalRating / 5)));
+
+        printLine(`Rating: ${averageRating.toFixed(1)}/10`);
+        printLine(`This rating is based on ${goodTransitionsCount} good transitions and ${badTransitionsCount} bad transitions throughout the week.`);
+    }
+
+    function rateClassOrder(classes, day) {
+        let classRating = 0;
+        let good = 0, bad = 0;
+
+        for (let i = 0; i < classes.length - 1; i++) {
+            const currentClass = classes[i];
+            const nextClass = classes[i + 1];
+
+            if (currentClass && nextClass && currentClass !== nextClass) {
+                const isGoodTransition = goodTransitions[day]?.some(pair => pair[0] === currentClass && pair[1] === nextClass);
+                const isBadTransition = badTransitions[day]?.some(pair => pair[0] === currentClass && pair[1] === nextClass);
+
+                if (isGoodTransition) {
+                    classRating += 2;
+                    good++;
+                } else if (isBadTransition) {
+                    classRating -= 2;
+                    bad++;
+                }
+            }
+        }
+
+        return { adjustment: classRating, good, bad };
+    }
+
+    userInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            const input = userInput.value;
+            printLine(`> ${input}`);
+            processInput(input);
+            userInput.value = '';
+        }
+    });
+
+    askForClass();
+    userInput.focus();
+</script>
+</body>
+</html>
